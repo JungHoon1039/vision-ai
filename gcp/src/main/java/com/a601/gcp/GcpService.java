@@ -28,44 +28,47 @@ public class GcpService {
     Feature feat = Feature.newBuilder().setType(Feature.Type.FACE_DETECTION).build();
     AnnotateImageRequest request = AnnotateImageRequest.newBuilder().addFeatures(feat).setImage(img).build();
     requests.add(request);
-
     try (ImageAnnotatorClient client = ImageAnnotatorClient.create()) {
       BatchAnnotateImagesResponse response = client.batchAnnotateImages(requests);
       List<AnnotateImageResponse> responses = response.getResponsesList();
-      for (AnnotateImageResponse res : responses) {
-        if (res.hasError()) {
-          result.put("status", "error");
-          result.put("errorMessage", res.getError().getMessage());
-          return result;
-        }
-        String imageInformation = "";
-        for (FaceAnnotation annotation : res.getFaceAnnotationsList()) {
-          imageInformation = String.format(
-              "emotions %n"
-                  + "joy: %s, point: %s%n"
-                  + "sorrow: %s, point: %s%n"
-                  + "anger: %s, point: %s%n"
-                  + "surprise: %s, point: %s%n"
-                  + "information %n"
-                  + "confidence: %s%n"
-                  + "under_exposed: %s, point: %s%n"
-                  + "blurred: %s, point: %s%n"
-                  + "headwear: %s, point: %s%n"
-              ,
-              annotation.getJoyLikelihood(), annotation.getJoyLikelihoodValue(),
-              annotation.getSorrowLikelihood(), annotation.getSorrowLikelihoodValue(),
-              annotation.getAngerLikelihood(), annotation.getAngerLikelihoodValue(),
-              annotation.getSurpriseLikelihood(), annotation.getSurpriseLikelihoodValue(),
-              annotation.getDetectionConfidence(),
-              annotation.getUnderExposedLikelihood(), annotation.getUnderExposedLikelihoodValue(),
-              annotation.getBlurredLikelihood(), annotation.getBlurredLikelihoodValue(),
-              annotation.getHeadwearLikelihood(), annotation.getHeadwearLikelihoodValue()
-          );
-        }
-        result.put("status", "success");
-        result.put("imgInfo", imageInformation);
+      AnnotateImageResponse res = responses.get(0);
+      if (res.toString().isEmpty()) {
+        result.put("status", "fail");
+        return result;
       }
+      if (res.hasError()) {
+        result.put("status", "error");
+        result.put("errorMessage", res.getError().getMessage());
+        return result;
+      }
+      FaceAnnotation annotation = res.getFaceAnnotationsList().get(0);
+      result.put("status", "success");
+      result.put("imgInfo", infoSummary(annotation));
     }
     return result;
+  }
+
+  private static String infoSummary(FaceAnnotation annotation) {
+    return String.format(
+        "emotions %n"
+            + "joy: %s, point: %s%n"
+            + "sorrow: %s, point: %s%n"
+            + "anger: %s, point: %s%n"
+            + "surprise: %s, point: %s%n"
+            + "information %n"
+            + "confidence: %s%n"
+            + "under_exposed: %s, point: %s%n"
+            + "blurred: %s, point: %s%n"
+            + "headwear: %s, point: %s%n"
+        ,
+        annotation.getJoyLikelihood(), annotation.getJoyLikelihoodValue(),
+        annotation.getSorrowLikelihood(), annotation.getSorrowLikelihoodValue(),
+        annotation.getAngerLikelihood(), annotation.getAngerLikelihoodValue(),
+        annotation.getSurpriseLikelihood(), annotation.getSurpriseLikelihoodValue(),
+        annotation.getDetectionConfidence(),
+        annotation.getUnderExposedLikelihood(), annotation.getUnderExposedLikelihoodValue(),
+        annotation.getBlurredLikelihood(), annotation.getBlurredLikelihoodValue(),
+        annotation.getHeadwearLikelihood(), annotation.getHeadwearLikelihoodValue()
+    );
   }
 }
