@@ -24,7 +24,7 @@ public class GcpController {
       throws IOException {
     Map<String, Object> result = gcpService.detectFace(params.get("imgPath").toString());
     if (result.get("status").toString().equals("fail")) {
-      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+      return new ResponseEntity<>("Face Detect Fail", HttpStatus.NOT_FOUND);
     }
     if (result.get("status").toString().equals("error")) {
       return new ResponseEntity<>(result.get("errorMessage").toString(), HttpStatus.INTERNAL_SERVER_ERROR);
