@@ -45,31 +45,33 @@ public class GcpService {
     }
     FaceAnnotation annotation = res.getFaceAnnotationsList().get(0);
     result.put("status", "success");
-    result.put("imgInfo", infoSummary(annotation));
+    result.put("score", calculateScore(annotation));
     return result;
   }
 
-  private static String infoSummary(FaceAnnotation annotation) {
-    return String.format(
-        "emotions %n"
-            + "joy: %s, point: %s%n"
-            + "sorrow: %s, point: %s%n"
-            + "anger: %s, point: %s%n"
-            + "surprise: %s, point: %s%n"
-            + "information %n"
-            + "confidence: %s%n"
-            + "under_exposed: %s, point: %s%n"
-            + "blurred: %s, point: %s%n"
-            + "headwear: %s, point: %s%n"
-        ,
-        annotation.getJoyLikelihood(), annotation.getJoyLikelihoodValue(),
-        annotation.getSorrowLikelihood(), annotation.getSorrowLikelihoodValue(),
-        annotation.getAngerLikelihood(), annotation.getAngerLikelihoodValue(),
-        annotation.getSurpriseLikelihood(), annotation.getSurpriseLikelihoodValue(),
-        annotation.getDetectionConfidence(),
-        annotation.getUnderExposedLikelihood(), annotation.getUnderExposedLikelihoodValue(),
-        annotation.getBlurredLikelihood(), annotation.getBlurredLikelihoodValue(),
-        annotation.getHeadwearLikelihood(), annotation.getHeadwearLikelihoodValue()
-    );
+  private static int calculateScore(FaceAnnotation annotation) {
+    int joy = annotation.getJoyLikelihoodValue();
+    int sorrow = annotation.getSorrowLikelihoodValue();
+    int anger = annotation.getAngerLikelihoodValue();
+    int surprise = annotation.getSurpriseLikelihoodValue();
+    int underExposure = annotation.getUnderExposedLikelihoodValue();
+    int blur = annotation.getBlurredLikelihoodValue();
+    int hat = annotation.getHeadwearLikelihoodValue();
+    double confidence = annotation.getDetectionConfidence();
+
+    // 가중치
+    double[] weights = {0.3, 0.2, 0.2, 0.1, 0.1, 0.1, 0};
+
+    // 각 정보에 대한 점수와 가중치를 곱한 후 합산
+    double weightedSum = (joy * weights[0] +
+        (6 - sorrow) * weights[1] +
+        (6 - anger) * weights[2] +
+        surprise * weights[3] +
+        (6 - underExposure) * weights[4] +
+        (6 - blur) * weights[5] +
+        hat * weights[6]) * confidence;
+
+    // 최종 점수를 0에서 100 사이로 매핑
+    return (int) Math.round(weightedSum * 20);
   }
 }
